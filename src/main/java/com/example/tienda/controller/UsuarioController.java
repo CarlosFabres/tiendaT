@@ -12,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 
@@ -63,65 +64,42 @@ public class UsuarioController {
         }
     }
 
-
-    /* 
-    @GetMapping("/{id}")
-    public ResponseEntity<Object> getUsuarioById(@PathVariable String id) {
-        try {
-            Long userId = Long.parseLong(id);
-            if (userId <= 0) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-                    "\"error\": \"El ID del usuario debe ser mayor que cero\""
-                );
-            }
-            Optional<Usuario> usuarioOptional = usuarioService.getUsuarioById(userId);
-            if (usuarioOptional.isPresent()) {
-                return ResponseEntity.ok(usuarioOptional.get());
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                    "\"error\": \"El usuario con ID " + userId + " no existe\""
-                );
-            }
-        } catch (NumberFormatException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-                "\"error\": \"El ID del usuario debe ser un número entero\""
-            );
-        }
-    }*/
-
     
-
-
     //EndPoint para crear un usuario
     //Validaciones para verificar que se manden los atributos requeridos
     @PostMapping
-    public ResponseEntity<Object> createUsuario(@RequestBody Usuario usuario){
+    public ResponseEntity<Object> createUsuario(@RequestBody Usuario usuario) {
     
         // Verificar si alguno de los campos requeridos está vacío o nulo
         if (usuario.getEmail() == null || usuario.getPassword() == null ||
-            usuario.getName() == null || usuario.getRol() == null ||
-            usuario.getDireccion1() == null || usuario.getDireccion1().isEmpty() ||
-            usuario.getEmail().isEmpty() || usuario.getPassword().isEmpty() ||
-            usuario.getName().isEmpty() || usuario.getRol().isEmpty()) {
+                usuario.getName() == null || usuario.getRol() == null ||
+                usuario.getDireccion1() == null || usuario.getDireccion1().isEmpty() ||
+                usuario.getEmail().isEmpty() || usuario.getPassword().isEmpty() ||
+                usuario.getName().isEmpty() || usuario.getRol().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-                "\"error\": \"Debes proporcionar todos los campos\""
+                    "\"error\": \"Debes proporcionar todos los campos\""
             );
         }
     
         // Si todos los campos necesarios están presentes, llamar al servicio para crear el usuario
         Usuario nuevoUsuario = usuarioService.createUsuario(usuario);
-
-        // Crear un objeto que contenga el mensaje y el usuario
+    
+        // Generar enlaces HATEOAS
+        WebMvcLinkBuilder linkToUsuario = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getUsuarioById(nuevoUsuario.getId()));
+        Link linkToAllUsuarios = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getAllUsuarios()).withRel("all-usuarios");
+    
+        // Crear un objeto que contenga el mensaje, el usuario y los enlaces
         Map<String, Object> response = new HashMap<>();
         response.put("message", "El usuario se creó correctamente");
-        response.put("usuario", nuevoUsuario);
-        
+        response.put("usuario", EntityModel.of(nuevoUsuario,
+                linkToUsuario.withSelfRel(),
+                linkToAllUsuarios));
+    
         // Devolver el objeto creado junto con el código de estado 201 (CREATED)
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     
-
-
+    
 
     //EndPoint para actualizar un usuario por id
     //Validaciones para id existente, actualizar solo campos proporcionados
@@ -163,11 +141,17 @@ public class UsuarioController {
         // Llamar al servicio para actualizar el usuario
         Usuario usuarioActualizado = usuarioService.updateUsuario(id, usuarioExistente);
         
-        // Crear un objeto que contenga el mensaje y el usuario actualizado
+        // Construir enlaces HATEOAS
+        Link selfLink = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).updateUsuario(id, usuario)).withSelfRel();
+        Link getAllUsuariosLink = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getAllUsuarios()).withRel("all-usuarios");
+
+        // Crear un objeto que contenga el mensaje, el usuario actualizado y los enlaces HATEOAS
         Map<String, Object> response = new HashMap<>();
         response.put("message", "El usuario se actualizó correctamente");
         response.put("usuario", usuarioActualizado);
-        
+        response.put("self", selfLink);
+        response.put("all-usuarios", getAllUsuariosLink);
+
         // Devolver el objeto creado junto con el mensaje
         return ResponseEntity.ok(response);
     }
