@@ -2,6 +2,8 @@ package com.example.tienda.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.anyLong;
 
@@ -61,4 +63,35 @@ public class UsuarioServiceTest {
         // Verificación: Se asegura de que el nombre del usuario obtenido coincide con el nombre especificado
         assertEquals("Carlos Fabres", resultado.get().getName());
     }
+
+    @Test
+    public void updateUsuarioTest() {
+        // Creación de un objeto Usuario para utilizar como datos de prueba
+        Usuario usuario = new Usuario();
+        usuario.setId(1L);
+        usuario.setName("Carlos Fabres");
+
+        // Configuración del mock del repositorio para simular la existencia del usuario
+        when(usuarioRepositoryMock.existsById(1L)).thenReturn(true);
+
+        // Configuración del mock del repositorio para devolver el usuario actualizado
+        when(usuarioRepositoryMock.save(usuario)).thenReturn(usuario);
+
+        // Llamada al método bajo prueba para actualizar un usuario
+        Usuario resultado = usuarioServicio.updateUsuario(1L, usuario);
+
+        // Verificación: Se asegura de que el nombre del usuario actualizado coincide con el nombre especificado
+        assertEquals("Carlos Fabres", resultado.getName());
+    }
+
+    @Test
+    public void deleteUsuarioTest() {
+        // Llamada al método bajo prueba para eliminar un usuario
+        usuarioServicio.deleteUsuario(1L);
+    
+        // Verificación: Se asegura de que el método deleteById haya sido llamado una vez con el ID especificado
+        verify(usuarioRepositoryMock, times(1)).deleteById(1L);
+    }
+    
+
 }
